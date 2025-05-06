@@ -15,7 +15,8 @@ build/
 /recordings/
 database.db
 .env
-.env.local
+.env.*
+!.env.example
 backend/.env
 
 # IDE files
