@@ -4,4 +4,4 @@ sqlalchemy==2.0.23
 python-dotenv==1.0.0
 httpx==0.25.1
 python-multipart==0.0.6
-pydantic==2.4.2
+pydantic==2.4.2"alembic" 
