@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import recordingService from '../services/recordingService';
 import webrtcService from '../services/webrtcService';
+import { API_URL } from '../config';  // Import API_URL from config
 
 function InterviewRoom() {
   const { sessionId } = useParams();
@@ -28,7 +29,8 @@ function InterviewRoom() {
   useEffect(() => {
     const fetchSessionData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/interviews/${sessionId}`);
+        // Use API_URL from config instead of hardcoded localhost
+        const response = await axios.get(`${API_URL}/api/interviews/${sessionId}`);
         setSessionData(response.data);
         
         // Generate join URL for candidate

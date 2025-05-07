@@ -1,3 +1,5 @@
+// Import WS_BASE_URL at the top
+import { WS_BASE_URL } from '../config';
 /**
  * Service for handling WebRTC connections
  */
@@ -45,8 +47,9 @@ class WebRTCService {
      * Set up WebSocket signaling
      */
     setupSignaling() {
-      const wsUrl = `ws://localhost:8000/ws/interview/${this.sessionId}/${this.role}`;
-      this.socket = new WebSocket(wsUrl);
+      // Use WS_BASE_URL instead of hardcoded URL
+  const wsUrl = `${WS_BASE_URL}/interview/${this.sessionId}/${this.role}`;
+  this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {
         console.log('WebSocket connection established');
