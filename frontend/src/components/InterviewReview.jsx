@@ -11,12 +11,15 @@ function InterviewReview() {
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
   const pollingIntervalRef = useRef(null);
+  
+  // Get API URL from environment variable
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Fetch session data
   useEffect(() => {
     const fetchSessionData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/interviews/${sessionId}`);
+        const response = await axios.get(`${API_URL}/api/interviews/${sessionId}`);
         setSessionData(response.data);
         
         // Check transcript status
@@ -42,7 +45,7 @@ function InterviewReview() {
   // Function to check transcript status
   const checkTranscriptStatus = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/interviews/${sessionId}/transcript`);
+      const response = await axios.get(`${API_URL}/api/interviews/${sessionId}/transcript`);
       
       if (response.data.is_processing) {
         // If still processing, start polling if not already
@@ -119,7 +122,7 @@ function InterviewReview() {
               <video 
                 ref={videoRef}
                 controls 
-                src={`http://localhost:8000/api/interviews/${sessionId}/recording`}
+                src={`${API_URL}/api/interviews/${sessionId}/recording`}
                 width="100%"
               />
             </div>
