@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
-
-// API base URL
-const API_URL = 'http://localhost:8000/api';
+import { API_URL } from './config'; // Import the API_URL from the config file
 
 // Validation schema
 const InterviewSchema = Yup.object().shape({
