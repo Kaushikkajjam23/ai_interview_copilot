@@ -35,8 +35,9 @@ async def startup_event():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Local development
+        #"http://localhost:5173",  # Local development
         "https://ai-interview-copilot.onrender.com",  # Your Render.com  domain (update this)
+         "*",  # For testing only - remove in production
     ],
     allow_credentials=True,
     allow_methods=["*"],
