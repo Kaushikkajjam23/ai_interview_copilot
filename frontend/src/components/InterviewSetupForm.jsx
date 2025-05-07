@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
-import { API_URL } from './config'; // Import the API_URL from the config file
+import API_URL from '../config'; // Adjust the import based on your project structure
+import './InterviewSetupForm.css'; // Adjust the import based on your project structure
 
 // Validation schema
 const InterviewSchema = Yup.object().shape({
