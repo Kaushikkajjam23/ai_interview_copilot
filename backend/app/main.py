@@ -36,7 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",  # Local development
-        "https://ai-interview-copilot.vercel.app",  # Your Vercel domain (update this)
+        "https://ai-interview-copilot.onrender.com",  # Your Render.com  domain (update this)
     ],
     allow_credentials=True,
     allow_methods=["*"],
