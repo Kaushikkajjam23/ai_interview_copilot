@@ -7,6 +7,12 @@ import subprocess
 from .database import engine, Base
 from .models import InterviewSession  # This imports all models
 from .routers import interviews, signaling
+# Define the FastAPI app FIRST
+app = FastAPI(
+    title="AI Interview Co-Pilot API",
+    description="API for recording, transcribing, and analyzing interviews",
+    version="0.1.0",
+)
 
 # Create recordings directory if it doesn't exist
 RECORDINGS_DIR = Path(__file__).resolve().parent.parent.parent / "recordings"
@@ -20,13 +26,6 @@ def run_migrations():
     else:
         # Fallback to direct table creation if alembic is not set up
         Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="AI Interview Co-Pilot API",
-    description="API for recording, transcribing, and analyzing interviews",
-    version="0.1.0",
-)
-
 # Register the startup event
 @app.on_event("startup")
 async def startup_event():
@@ -36,8 +35,9 @@ async def startup_event():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Local development
+        #"http://localhost:5173",  # Local development
         "https://ai-interview-copilot.onrender.com",  # Your Render.com  domain (update this)
+         "*",  # For testing only - remove in production
     ],
     allow_credentials=True,
     allow_methods=["*"],
