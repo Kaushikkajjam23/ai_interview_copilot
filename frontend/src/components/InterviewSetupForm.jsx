@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import axios from 'axios';
-import {API_URL} from '../config.js'; // Adjust the import based on your project structure
-
+import apiService from '../services/apiService'; // Import the API service
 
 // Validation schema
 const InterviewSchema = Yup.object().shape({
@@ -38,14 +36,14 @@ function InterviewSetupForm() {
     setError(null);
     
     try {
-      // Send the form data to the backend API
-      const response = await axios.post(`${API_URL}/interviews/`, values);
+      // Use the API service instead of direct axios call
+      const response = await apiService.createSession(values);
       
       // Get the session ID from the response
-      const sessionId = response.data.id;
+      const sessionId = response.id;
       
-      // Navigate to the interview room with the session ID
-      navigate(`/interview/${sessionId}`);
+      // Navigate to the interview room with the session ID and specify role
+      navigate(`/interview/${sessionId}?role=interviewer`);
     } catch (err) {
       console.error('Error creating interview session:', err);
       setError(

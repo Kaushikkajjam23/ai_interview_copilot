@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import recordingService from '../services/recordingService';
 import webrtcService from '../services/webrtcService';
-import { API_URL } from '../config';  // Import API_URL from config
+import apiService from '../services/apiService'; // Import the API service
 
 function InterviewRoom() {
   const { sessionId } = useParams();
@@ -29,9 +28,9 @@ function InterviewRoom() {
   useEffect(() => {
     const fetchSessionData = async () => {
       try {
-        // Use API_URL from config instead of hardcoded localhost
-        const response = await axios.get(`${API_URL}/api/interviews/${sessionId}`);
-        setSessionData(response.data);
+        // Use the API service instead of direct axios call
+        const data = await apiService.fetchSession(sessionId);
+        setSessionData(data);
         
         // Generate join URL for candidate
         const baseUrl = window.location.origin;
@@ -130,7 +129,7 @@ function InterviewRoom() {
       
       // Upload the recording
       setIsUploading(true);
-      await recordingService.uploadRecording(recordedBlob, sessionId);
+      await apiService.uploadRecording(sessionId, recordedBlob);
       setIsUploading(false);
       
       // Navigate to review page

@@ -1,10 +1,8 @@
 /**
  * Service for handling video/audio recording functionality
  */
-
-// Import the VITE_API_URL defined in your environment files
-const API_URL = import.meta.env.VITE_API_URL;
-
+// In any component under src/components/
+import { API_URL} from '../config';
 /**
  * Service for handling video/audio recording functionality
  */

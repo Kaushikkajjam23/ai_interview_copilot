@@ -3,6 +3,7 @@ import InterviewSetupForm from './components/InterviewSetupForm';
 import InterviewRoom from './components/InterviewRoom';
 import InterviewReview from './components/InterviewReview';
 import Header from './components/Header';
+import NotFound from './components/NotFound';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<InterviewSetupForm />} />
             <Route path="/interview/:sessionId" element={<InterviewRoom />} />
             <Route path="/review/:sessionId" element={<InterviewReview />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>

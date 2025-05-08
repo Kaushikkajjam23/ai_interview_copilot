@@ -195,6 +195,10 @@ body {
   gap: 2rem;
   margin-top: 0.5rem;
   color: #555;
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
 }
 
 /* Video styles */
@@ -489,6 +493,8 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
 }
 
 .transcript-item:hover {
@@ -521,6 +527,11 @@ body {
 
 .candidate .speaker-label {
   color: #2ecc71;
+}
+
+.speaker {
+  font-weight: bold;
+  color: #0066cc;
 }
 
 .timestamp {
@@ -566,4 +577,121 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* New styles for interview review */
+.interview-review {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.tab {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.tab.active {
+  border-bottom: 3px solid #0066cc;
+  color: #0066cc;
+}
+
+.tab:disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+.transcript-container {
+  margin-bottom: 30px;
+}
+
+.generate-analysis-button {
+  display: block;
+  margin: 20px auto;
+  padding: 10px 20px;
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.loading-analysis {
+  text-align: center;
+  padding: 20px;
+  color: #0066cc;
+}
+
+.analysis-section {
+  margin-bottom: 30px;
+}
+
+.analysis-section h2 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.analysis-section ul {
+  padding-left: 20px;
+}
+
+.analysis-section li {
+  margin-bottom: 10px;
+}
+
+.recommendation {
+  font-weight: bold;
+  color: #0066cc;
+}
+
+.score-item {
+  margin-bottom: 15px;
+}
+
+.skill-name {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.score-bar-container {
+  height: 20px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  position: relative;
+}
+
+.score-bar {
+  height: 100%;
+  background-color: #0066cc;
+  border-radius: 10px;
+}
+
+.score-value {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  color: white;
+  font-weight: bold;
+  line-height: 20px;
+}
+
+.processing-indicator {
+  text-align: center;
+  padding: 10px;
+  margin-bottom: 15px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 5px;
+  color: #856404;
 }

@@ -1,6 +1,7 @@
+# backend/app/services/transcription.py
 import os
 import httpx
-import time
+import asyncio
 import json
 from pathlib import Path
 from dotenv import load_dotenv
@@ -61,6 +62,7 @@ async def transcribe_audio(audio_file_path, session_id):
         transcript_request = {
             "audio_url": upload_url,
             "speaker_labels": True,  # Enable speaker diarization
+            "speakers_expected": 2,  # We expect 2 speakers (interviewer and candidate)
             "language_code": "en"    # Specify language (optional)
         }
         
@@ -85,9 +87,30 @@ async def transcribe_audio(audio_file_path, session_id):
             
             if transcript["status"] == "completed":
                 print("Transcription completed successfully")
-                return transcript
+                
+                # Process the transcript to extract text and utterances
+                text = transcript.get("text", "")
+                utterances = []
+                
+                # Extract utterances with speaker information
+                if "utterances" in transcript:
+                    utterances = [
+                        {
+                            "speaker": utterance["speaker"],
+                            "text": utterance["text"],
+                            "start": utterance["start"],
+                            "end": utterance["end"]
+                        }
+                        for utterance in transcript["utterances"]
+                    ]
+                
+                return {
+                    "text": text,
+                    "utterances": utterances
+                }
+                
             elif transcript["status"] == "error":
                 raise Exception(f"Transcription error: {transcript.get('error', 'Unknown error')}")
             
             print(f"Transcription status: {transcript['status']}. Waiting...")
-            await asyncx.sleep(5)  # Poll every 5 seconds
+            await asyncio.sleep(5)  # Poll every 5 seconds

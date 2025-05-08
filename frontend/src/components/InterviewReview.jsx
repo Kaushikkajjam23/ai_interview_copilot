@@ -9,6 +9,9 @@ function InterviewReview() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('transcript');
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+  
   const videoRef = useRef(null);
   const pollingIntervalRef = useRef(null);
   
@@ -76,6 +79,46 @@ function InterviewReview() {
     }
   };
 
+  // Function to generate AI analysis
+  const generateAnalysis = async () => {
+    if (!sessionData || !sessionData.transcript) {
+      setError('Cannot generate analysis: No transcript available');
+      return;
+    }
+    
+    setIsAnalysisLoading(true);
+    
+    try {
+      await axios.post(`${API_URL}/api/interviews/${sessionId}/analyze`);
+      
+      // Poll for analysis completion
+      const pollInterval = setInterval(async () => {
+        const response = await axios.get(`${API_URL}/api/interviews/${sessionId}`);
+        setSessionData(response.data);
+        
+        if (response.data.ai_summary) {
+          clearInterval(pollInterval);
+          setActiveTab('analysis');
+          setIsAnalysisLoading(false);
+        }
+      }, 5000); // Check every 5 seconds
+      
+      // Stop polling after 2 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isAnalysisLoading) {
+          setIsAnalysisLoading(false);
+          setError('Analysis is taking longer than expected. Please check back later.');
+        }
+      }, 120000);
+      
+    } catch (err) {
+      console.error('Error generating analysis:', err);
+      setError('Failed to generate analysis. Please try again.');
+      setIsAnalysisLoading(false);
+    }
+  };
+
   // Function to seek video to specific timestamp
   const seekToTimestamp = (timeInMs) => {
     if (videoRef.current) {
@@ -114,68 +157,157 @@ function InterviewReview() {
         </div>
       </div>
 
-      <div className="review-content">
-        <div className="video-section">
-          {sessionData.recording_path ? (
-            <div className="video-playback">
-              <h3>Interview Recording</h3>
-              <video 
-                ref={videoRef}
-                controls 
-                src={`${API_URL}/api/interviews/${sessionId}/recording`}
-                width="100%"
-              />
-            </div>
-          ) : (
-            <div className="no-recording">
-              <p>No recording available for this session.</p>
-            </div>
-          )}
-          
-          <div className="interview-context">
-            <h3>Interview Context</h3>
-            <div className="context-item">
-              <strong>Required Skills:</strong>
-              <p>{sessionData.required_skills}</p>
-            </div>
-            <div className="context-item">
-              <strong>Focus Areas:</strong>
-              <p>{sessionData.focus_areas}</p>
-            </div>
+      <div className="video-container">
+        {sessionData.recording_path ? (
+          <video 
+            ref={videoRef}
+            controls 
+            src={`${API_URL}/api/interviews/${sessionId}/recording`}
+            width="100%"
+          />
+        ) : (
+          <div className="no-recording">
+            <p>No recording available for this session.</p>
           </div>
-        </div>
-        
-        <div className="transcript-section">
-          <h3>Transcript</h3>
-          
-          {isPolling ? (
-            <div className="processing-indicator">
-              <div className="spinner"></div>
-              <p>Generating transcript... This may take a few minutes.</p>
-            </div>
-          ) : transcript ? (
-            <div className="transcript-content">
-              {transcript.map((item, index) => (
-                <div 
-                  key={index} 
-                  className={`transcript-item ${item.speaker === 'Speaker 1' ? 'interviewer' : 'candidate'}`}
-                  onClick={() => seekToTimestamp(item.start_time)}
-                >
-                  <div className="transcript-header">
-                    <span className="speaker-label">
-                      {item.speaker === 'Speaker 1' ? 'Interviewer' : 'Candidate'}
-                    </span>
-                    <span className="timestamp">{formatTimestamp(item.start_time)}</span>
+        )}
+      </div>
+
+      <div className="tabs">
+        <button 
+          className={`tab ${activeTab === 'transcript' ? 'active' : ''}`}
+          onClick={() => setActiveTab('transcript')}
+        >
+          Transcript
+        </button>
+        <button 
+          className={`tab ${activeTab === 'analysis' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analysis')}
+          disabled={!sessionData?.ai_summary}
+        >
+          AI Analysis
+        </button>
+      </div>
+
+      <div className="tab-content">
+        {activeTab === 'transcript' && (
+          <div className="transcript-container">
+            {isPolling ? (
+              <div className="processing-indicator">
+                <div className="spinner"></div>
+                <p>Generating transcript... This may take a few minutes.</p>
+              </div>
+            ) : transcript ? (
+              <div className="transcript-content">
+                {transcript.map((item, index) => (
+                  <div 
+                    key={index} 
+                    className={`transcript-item ${item.speaker === 'Speaker 1' ? 'interviewer' : 'candidate'}`}
+                    onClick={() => seekToTimestamp(item.start_time)}
+                  >
+                    <div className="transcript-header">
+                      <span className="speaker-label">
+                        {item.speaker === 'Speaker 1' ? 'Interviewer' : 'Candidate'}
+                      </span>
+                      <span className="timestamp">{formatTimestamp(item.start_time)}</span>
+                    </div>
+                    <div className="transcript-text">{item.text}</div>
                   </div>
-                  <div className="transcript-text">{item.text}</div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-transcript">
+                <p>No transcript available yet.</p>
+              </div>
+            )}
+            
+            {!sessionData.ai_summary && !isAnalysisLoading && transcript && (
+              <button 
+                className="generate-analysis-button"
+                onClick={generateAnalysis}
+              >
+                Generate AI Analysis
+              </button>
+            )}
+            
+            {isAnalysisLoading && (
+              <div className="loading-analysis">
+                Generating AI analysis...
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'analysis' && sessionData.ai_summary && (
+          <div className="analysis-container">
+            <div className="analysis-section">
+              <h2>Summary</h2>
+              <p>{sessionData.ai_summary}</p>
+            </div>
+            
+            {sessionData.ai_detailed_analysis && (
+              <>
+                <div className="analysis-section">
+                  <h2>Technical Assessment</h2>
+                  <p>{sessionData.ai_detailed_analysis.technical_assessment}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="no-transcript">
-              <p>No transcript available yet.</p>
-            </div>
-          )}
+                
+                <div className="analysis-section">
+                  <h2>Strengths</h2>
+                  <ul>
+                    {sessionData.ai_detailed_analysis.strengths.map((strength, index) => (
+                      <li key={index}>{strength}</li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="analysis-section">
+                  <h2>Areas for Improvement</h2>
+                  <ul>
+                    {sessionData.ai_detailed_analysis.areas_for_improvement.map((area, index) => (
+                      <li key={index}>{area}</li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="analysis-section">
+                  <h2>Recommendation</h2>
+                  <p className="recommendation">{sessionData.ai_detailed_analysis.recommendation}</p>
+                </div>
+                
+                <div className="analysis-section">
+                  <h2>Skill Scores</h2>
+                  <div className="scores">
+                    {Object.entries(sessionData.ai_detailed_analysis.scores || {}).map(([skill, score]) => (
+                      <div key={skill} className="score-item">
+                        <span className="skill-name">
+                          {skill.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+                        </span>
+                        <div className="score-bar-container">
+                          <div 
+                            className="score-bar" 
+                            style={{width: `${(parseInt(score) / 10) * 100}%`}}
+                          ></div>
+                          <span className="score-value">{score}/10</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="interview-context">
+        <h3>Interview Context</h3>
+        <div className="context-item">
+          <strong>Required Skills:</strong>
+          <p>{sessionData.required_skills}</p>
+        </div>
+        <div className="context-item">
+          <strong>Focus Areas:</strong>
+          <p>{sessionData.focus_areas}</p>
         </div>
       </div>
     </div>

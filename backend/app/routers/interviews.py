@@ -204,11 +204,30 @@ async def process_transcription(file_path, session_id):
         # Update the session with the transcript
         session.transcript = transcript_text
         session.transcript_json = formatted_transcript
+        db_session.commit()
+        
+        print(f"Transcription completed for session {session_id}")
+        
+        # Get interview context for AI analysis
+        context = {
+            "interview_topic": session.interview_topic,
+            "candidate_level": session.candidate_level,
+            "required_skills": session.required_skills,
+            "focus_areas": session.focus_areas
+        }
+        
+        # Perform AI analysis
+        from ..services.ai_analysis import analyze_interview
+        analysis_result = await analyze_interview(formatted_transcript, context)
+        
+        # Update the session with the analysis results
+        session.ai_summary = analysis_result.get("summary")
+        session.ai_detailed_analysis = analysis_result.get("detailed")
         session.is_processing = False
         session.is_completed = True
         db_session.commit()
         
-        print(f"Transcription completed for session {session_id}")
+        print(f"AI analysis completed for session {session_id}")
         
     except Exception as e:
         print(f"Error processing transcription: {str(e)}")
@@ -255,6 +274,7 @@ async def get_recording(
 
     return FileResponse(path=file_path)
 
+
 @router.get("/{session_id}/transcript")
 async def get_transcript(
     session_id: int,
@@ -277,3 +297,79 @@ async def get_transcript(
         "transcript": session.transcript,
         "transcript_json": session.transcript_json
     }
+
+
+@router.post("/{session_id}/analyze", response_model=dict)
+async def analyze_interview_endpoint(
+    session_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate AI analysis for an interview
+    """
+    # Check if the session exists
+    session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    if not session.transcript:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot analyze: No transcript available"
+        )
+    
+    # Get interview context
+    context = {
+        "interview_topic": session.interview_topic,
+        "candidate_level": session.candidate_level,
+        "required_skills": session.required_skills,
+        "focus_areas": session.focus_areas
+    }
+    
+    # Start analysis in background
+    background_tasks.add_task(
+        analyze_interview_background,
+        session_id,
+        session.transcript_json or session.transcript,
+        context
+    )
+    
+    return {
+        "message": "Analysis started",
+        "status": "processing"
+    }
+
+
+async def analyze_interview_background(session_id, transcript, context):
+    """
+    Background task to analyze an interview
+    """
+    try:
+        # Get a new DB session
+        db_session = SessionLocal()
+        
+        # Get the interview session
+        session = db_session.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+        if not session:
+            print(f"Session {session_id} not found")
+            return
+        
+        # Perform AI analysis
+        from ..services.ai_analysis import analyze_interview
+        analysis_result = await analyze_interview(transcript, context)
+        
+        # Update the session with the analysis results
+        session.ai_summary = analysis_result.get("summary")
+        session.ai_detailed_analysis = analysis_result.get("detailed")
+        db_session.commit()
+        
+        print(f"AI analysis completed for session {session_id}")
+        
+    except Exception as e:
+        print(f"Error in analysis background task: {str(e)}")
+    finally:
+        db_session.close()
