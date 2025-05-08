@@ -49,6 +49,7 @@ class WebRTCService {
     setupSignaling() {
       // Use WS_BASE_URL instead of hardcoded URL
   const wsUrl = `${WS_BASE_URL}/interview/${this.sessionId}/${this.role}`;
+  console.log('Connecting to WebSocket:', wsUrl);
   this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {

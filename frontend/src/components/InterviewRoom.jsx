@@ -10,7 +10,7 @@ function InterviewRoom() {
   const location = useLocation();
   // Get role from query params or default to interviewer
   const role = new URLSearchParams(location.search).get('role') || 'interviewer';
-  
+  console.log('Session ID:', sessionId);
   const [sessionData, setSessionData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,6 +26,7 @@ function InterviewRoom() {
 
   // Fetch session data
   useEffect(() => {
+    console.log('InterviewRoom mounted. Session ID:', sessionId, 'Role:', role);
     const fetchSessionData = async () => {
       try {
         // Use the API service instead of direct axios call
@@ -34,7 +35,9 @@ function InterviewRoom() {
         
         // Generate join URL for candidate
         const baseUrl = window.location.origin;
-        setJoinUrl(`${baseUrl}/interview/${sessionId}?role=candidate`);
+        const candidateUrl= `${baseUrl}/interview/${sessionId}?role=candidate`;
+        console.log('Candidate URL:', candidateUrl);
+        setJoinUrl(candidateUrl);
       } catch (err) {
         console.error('Error fetching session data:', err);
         setError('Failed to load interview session data. Please try again.');
