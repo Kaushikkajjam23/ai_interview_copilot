@@ -2,9 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import subprocess
-# Import database models
-from app.models.interview import Base
-from app.database import engine
+# Import database models and routers
 from .database import engine, Base
 from .routers import interviews, signaling
 from .models.interview import InterviewSession
