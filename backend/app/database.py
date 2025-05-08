@@ -4,26 +4,22 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pathlib import Path
 
-# Determine if we're on Heroku (Heroku sets DATABASE_URL environment variable)
-is_heroku = "DATABASE_URL" in os.environ
-
-# Database URL configuration
-if is_heroku:
-    # Use PostgreSQL on Heroku
-    DATABASE_URL = os.environ["DATABASE_URL"]
-    # Fix for Heroku PostgreSQL URL format
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# For Render deployment, use /tmp directory which is writable
+if os.environ.get('RENDER'):
+    DB_DIR = Path('/tmp')
 else:
-    # Use SQLite locally
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    DATABASE_URL = f"sqlite:///{BASE_DIR}/database.db"
+    # For local development
+    DB_DIR = Path(__file__).resolve().parent.parent / "data"
+    DB_DIR.mkdir(exist_ok=True)
+
+# Database URL
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_DIR}/interview_app.db"
     
 # Create SQLAlchemy engine and session
 engine = create_engine(
-    DATABASE_URL,
+    SQLALCHEMY_DATABASE_URL,  # Fixed: using SQLALCHEMY_DATABASE_URL instead of DATABASE_URL
     # These arguments are only needed for SQLite
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

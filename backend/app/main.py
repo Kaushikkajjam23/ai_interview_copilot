@@ -1,22 +1,27 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
 from pathlib import Path
 import subprocess
-
+# Import database models
+from app.models.interview import Base
+from app.database import engine
 from .database import engine, Base
-from .models import InterviewSession  # This imports all models
 from .routers import interviews, signaling
+from .models.interview import InterviewSession
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
 # Define the FastAPI app FIRST
 app = FastAPI(
     title="AI Interview Co-Pilot API",
     description="API for recording, transcribing, and analyzing interviews",
     version="0.1.0",
 )
-
 # Create recordings directory if it doesn't exist
 RECORDINGS_DIR = Path(__file__).resolve().parent.parent.parent / "recordings"
 RECORDINGS_DIR.mkdir(exist_ok=True)
+
 
 # Run migrations on startup
 def run_migrations():

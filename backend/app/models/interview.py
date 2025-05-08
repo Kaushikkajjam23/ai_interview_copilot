@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Boolean
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from datetime import datetime
 from ..database import Base
 
@@ -7,22 +8,22 @@ class InterviewSession(Base):
     __tablename__ = "interview_sessions"
     
     id = Column(Integer, primary_key=True, index=True)
-    interviewer_name = Column(String(100))
-    candidate_name = Column(String(100))
-    interview_topic = Column(String(200))
-    candidate_level = Column(String(50))  # Junior, Mid, Senior, etc.
-    required_skills = Column(Text)  # Comma-separated or JSON string
-    focus_areas = Column(Text)
-    recording_path = Column(String(255), nullable=True)
+    interviewer_name = Column(String, nullable=False)
+    candidate_name = Column(String, nullable=False)
+    interview_topic = Column(String, nullable=False)
+    candidate_level = Column(String, nullable=False)
+    required_skills = Column(String, nullable=False)
+    focus_areas = Column(String, nullable=False)
+    recording_path = Column(String, nullable=True)
     transcript = Column(Text, nullable=True)
-    transcript_json = Column(JSON, nullable=True)  # Structured transcript with speaker labels
     ai_summary = Column(Text, nullable=True)
-    ai_detailed_analysis = Column(JSON, nullable=True)  # Store structured JSON
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_processing = Column(Boolean, default=False)  # Flag for background processing
-    is_completed = Column(Boolean, default=False)   # Flag for completed processing
-    error_message = Column(Text, nullable=True)     # Store any processing errors
+    ai_detailed_analysis = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    is_processing = Column(Boolean, default=False)
+    is_completed = Column(Boolean, default=False)
+    error_message = Column(Text, nullable=True)
+    transcript_json = Column(JSON, nullable=True)
     
     def to_dict(self):
         """Convert model instance to dictionary"""
