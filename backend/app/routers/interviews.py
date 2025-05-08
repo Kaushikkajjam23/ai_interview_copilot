@@ -64,18 +64,27 @@ def create_interview_session(
     """
     Create a new interview session with context information
     """
-    new_session = InterviewSession(
-        interviewer_name=context.interviewer_name,
-        candidate_name=context.candidate_name,
-        interview_topic=context.interview_topic,
-        candidate_level=context.candidate_level,
-        required_skills=context.required_skills,
-        focus_areas=context.focus_areas,
-    )
-    db.add(new_session)
-    db.commit()
-    db.refresh(new_session)
-    return new_session
+    try:
+        print(f"Creating new interview session: {context}")
+        new_session = InterviewSession(
+            interviewer_name=context.interviewer_name,
+            candidate_name=context.candidate_name,
+            interview_topic=context.interview_topic,
+            candidate_level=context.candidate_level,
+            required_skills=context.required_skills,
+            focus_areas=context.focus_areas,
+        )
+        db.add(new_session)
+        db.commit()
+        db.refresh(new_session)
+        print(f"Created session with ID: {new_session.id}")
+        return new_session
+    except Exception as e:
+        print(f"Error creating session: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create interview session: {str(e)}"
+        )
 
 
 @router.get("/{session_id}", response_model=InterviewResponse)

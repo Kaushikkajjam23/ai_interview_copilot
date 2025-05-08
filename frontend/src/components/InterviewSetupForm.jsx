@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import apiService from '../services/apiService'; // Import the API service
+import { API_URL } from '../config'; // Import API_URL directly
 
 // Validation schema
 const InterviewSchema = Yup.object().shape({
@@ -31,27 +31,48 @@ function InterviewSetupForm() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, { setSubmitting }) => {
     setIsSubmitting(true);
     setError(null);
     
     try {
-      // Use the API service instead of direct axios call
-      const response = await apiService.createSession(values);
+      console.log('Submitting to:', `${API_URL}/api/interviews/`);
+      console.log('Form data:', values);
       
-      // Get the session ID from the response
-      const sessionId = response.id;
+      // Test if the API is reachable
+      try {
+        const pingResponse = await fetch(`${API_URL}/api/interviews/`, {
+          method: 'OPTIONS',
+        });
+        console.log('API ping response:', pingResponse.status);
+      } catch (pingErr) {
+        console.error('API ping failed:', pingErr);
+      }
       
-      // Navigate to the interview room with the session ID and specify role
-      navigate(`/interview/${sessionId}?role=interviewer`);
+      const response = await fetch(`${API_URL}/api/interviews/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+      
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to create interview session');
+      }
+      
+      console.log('Success! Interview created:', data);
+      navigate(`/interview/${data.id}?role=interviewer`);
     } catch (err) {
-      console.error('Error creating interview session:', err);
-      setError(
-        err.response?.data?.detail || 
-        'An error occurred while creating the interview session. Please try again.'
-      );
+      console.error('Error creating interview:', err);
+      setError(`An error occurred while creating the interview session: ${err.message}`);
     } finally {
       setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
@@ -77,7 +98,7 @@ function InterviewSetupForm() {
         validationSchema={InterviewSchema}
         onSubmit={handleSubmit}
       >
-        {({ isValid }) => (
+        {({ isValid, isSubmitting: formikSubmitting }) => (
           <Form className="interview-form">
             <div className="form-group">
               <label htmlFor="interviewer_name">Interviewer Name</label>
@@ -149,7 +170,7 @@ function InterviewSetupForm() {
             <button 
               type="submit" 
               className="submit-button" 
-              disabled={isSubmitting || !isValid}
+              disabled={isSubmitting || formikSubmitting || !isValid}
             >
               {isSubmitting ? 'Creating...' : 'Start Interview'}
             </button>
