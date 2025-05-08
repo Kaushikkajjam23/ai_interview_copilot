@@ -4,6 +4,7 @@ import InterviewRoom from './components/InterviewRoom';
 import InterviewReview from './components/InterviewReview';
 import Header from './components/Header';
 import NotFound from './components/NotFound';
+import ApiTest from './components/ApiTest';
 import './App.css';
 
 function App() {
