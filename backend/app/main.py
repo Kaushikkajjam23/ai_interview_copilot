@@ -40,7 +40,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",  # Local development
         "https://ai-interview-copilot-git-main-kaushik-kajjams-projects.vercel.app",  # Your Vercel domain
-         "*",  # For testing only - remove in production
+        # "*",  # For testing only - remove in production
     ],
     allow_credentials=True,
     allow_methods=["*"],
