@@ -1,7 +1,6 @@
 // frontend/src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
 import { API_URL } from '../config';
-
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
