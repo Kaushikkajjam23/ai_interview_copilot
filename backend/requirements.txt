@@ -1,5 +1,5 @@
 #FastAPI and web server
-fastapi>=0.104.0
+fastapi
 uvicorn>=0.24.0
 python-multipart>=0.0.6
 pydantic>=2.4.2
@@ -29,12 +29,11 @@ websockets>=12.0
 starlette>=0.31.1
 
 #Specific versions
-fastapi==0.103.1
-uvicorn==0.23.2
-sqlalchemy==2.0.20
-pydantic==2.3.0
-python-jose==3.3.0
-passlib==1.7.4
-python-multipart==0.0.6
-email-validator==2.0.0.post2
-bcrypt==4.0.1
+
+sqlalchemy>=2.0.20
+pydantic>=2.3.0
+python-jose>=3.3.0
+passlib>=1.7.4
+python-multipart>=0.0.6
+email-validator>=2.0.0.post2
+bcrypt>=4.0.1
