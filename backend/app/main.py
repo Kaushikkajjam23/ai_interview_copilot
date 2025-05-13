@@ -6,7 +6,12 @@ import subprocess
 from .database import engine, Base
 from .routers import interviews, signaling
 from .models.interview import InterviewSession
-
+import os
+# Import the settings object
+from .config import Settings  # Make sure this import is at the top
+frontend_url = os.environ.get("FRONTEND_URL")
+if frontend_url:
+    origins.append(frontend_url)
 # Create tables
 Base.metadata.create_all(bind=engine)
 
@@ -16,6 +21,8 @@ app = FastAPI(
     description="API for recording, transcribing, and analyzing interviews",
     version="0.1.0",
 )
+database_url = os.getenv("DATABASE_URL")
+jwt_secret = os.getenv("JWT_SECRET_KEY")
 # Create recordings directory if it doesn't exist
 RECORDINGS_DIR = Path(__file__).resolve().parent.parent.parent / "recordings"
 RECORDINGS_DIR.mkdir(exist_ok=True)
@@ -34,14 +41,10 @@ def run_migrations():
 async def startup_event():
     run_migrations()
 
-# Configure CORS
+# Set up CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # Local development
-        "https://ai-interview-copilot-git-main-kaushik-kajjams-projects.vercel.app",  # Your Vercel domain
-        # "*",  # For testing only - remove in production
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,8 +52,18 @@ app.add_middleware(
 
 # Include routers
 app.include_router(interviews.router)
-app.include_router(signaling.router)
+app.include_router(signaling.router)  # If you have this router
 
 @app.get("/")
-async def root():
-    return {"message": "Welcome to AI Interview Co-Pilot API"}
+def read_root():
+    return {"message": "Welcome to AI Interview Copilot API"}
+
+# Add a test endpoint to verify environment variables
+@app.get("/api/test-env")
+def test_env():
+    return {
+        "database_url_type": Settings.DATABASE_URL.split("://")[0],
+        "jwt_algorithm": Settings.JWT_ALGORITHM,
+        "email_configured": bool(Settings.EMAIL_HOST and settings.EMAIL_USERNAME),
+        "cors_origins": Settings.CORS_ORIGINS,
+    }

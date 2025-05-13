@@ -1,15 +1,19 @@
+# backend/app/routers/interviews.py
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from pathlib import Path
 import os
 
 from ..database import get_db, SessionLocal
 from ..models.interview import InterviewSession
+from ..models.user import User
 from ..services.transcription import transcribe_audio
+from ..auth.utils import get_current_user
+from ..services.email_service import send_interview_invitation, send_interview_feedback
 
 router = APIRouter(
     prefix="/api/interviews",
@@ -30,6 +34,17 @@ class InterviewContextCreate(BaseModel):
     candidate_level: str
     required_skills: str
     focus_areas: str
+    candidate_email: Optional[EmailStr] = None
+    scheduled_time: Optional[datetime] = None
+
+class InterviewUpdate(BaseModel):
+    interview_topic: Optional[str] = None
+    candidate_level: Optional[str] = None
+    required_skills: Optional[str] = None
+    focus_areas: Optional[str] = None
+    scheduled_time: Optional[datetime] = None
+    is_canceled: Optional[bool] = None
+    feedback: Optional[str] = None
 
 class InterviewResponse(BaseModel):
     id: int
@@ -49,6 +64,10 @@ class InterviewResponse(BaseModel):
     is_processing: Optional[bool] = False
     error_message: Optional[str] = None
     transcript_json: Optional[list] = None
+    interviewer_id: Optional[int] = None
+    candidate_id: Optional[int] = None
+    scheduled_time: Optional[datetime] = None
+    is_canceled: Optional[bool] = False
 
     class Config:
         orm_mode = True
@@ -59,25 +78,68 @@ class InterviewResponse(BaseModel):
 @router.post("/", response_model=InterviewResponse, status_code=status.HTTP_201_CREATED)
 def create_interview_session(
     context: InterviewContextCreate,
-    db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Create a new interview session with context information
     """
     try:
         print(f"Creating new interview session: {context}")
+        
+        # If candidate email is provided, check if they exist or create them
+        candidate_id = None
+        if context.candidate_email:
+            candidate = db.query(User).filter(User.email == context.candidate_email).first()
+            if not candidate:
+                # Create a new user for the candidate with a temporary password
+                from ..auth.utils import get_password_hash
+                import secrets
+                
+                temp_password = secrets.token_urlsafe(8)
+                hashed_password = get_password_hash(temp_password)
+                
+                candidate = User(
+                    email=context.candidate_email,
+                    hashed_password=hashed_password,
+                    full_name=context.candidate_name or context.candidate_email.split('@')[0]
+                )
+                db.add(candidate)
+                db.commit()
+                db.refresh(candidate)
+            
+            candidate_id = candidate.id
+        
         new_session = InterviewSession(
-            interviewer_name=context.interviewer_name,
+            interviewer_name=context.interviewer_name or current_user.full_name,
+            interviewer_id=current_user.id,
             candidate_name=context.candidate_name,
+            candidate_id=candidate_id,
             interview_topic=context.interview_topic,
             candidate_level=context.candidate_level,
             required_skills=context.required_skills,
             focus_areas=context.focus_areas,
+            scheduled_time=context.scheduled_time
         )
         db.add(new_session)
         db.commit()
         db.refresh(new_session)
         print(f"Created session with ID: {new_session.id}")
+        
+        # Send email notification to candidate if scheduled time is provided
+        if context.candidate_email and context.scheduled_time:
+            interview_link = f"https://ai-interview-copilot.vercel.app/interview/{new_session.id}?role=candidate"
+            send_interview_invitation(
+                background_tasks=background_tasks,
+                to_email=context.candidate_email,
+                candidate_name=context.candidate_name,
+                interviewer_name=current_user.full_name,
+                interview_topic=context.interview_topic,
+                scheduled_time=context.scheduled_time.strftime("%Y-%m-%d %H:%M"),
+                interview_link=interview_link
+            )
+        
         return new_session
     except Exception as e:
         print(f"Error creating session: {str(e)}")
@@ -90,7 +152,8 @@ def create_interview_session(
 @router.get("/{session_id}", response_model=InterviewResponse)
 def get_interview_session(
     session_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get details of a specific interview session
@@ -101,18 +164,94 @@ def get_interview_session(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session with ID {session_id} not found"
         )
+    
+    # Check if user is authorized to access this interview
+    if (session.interviewer_id != current_user.id and 
+        session.candidate_id != current_user.id and 
+        not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this interview"
+        )
+    
     return session
 
 
 @router.get("/", response_model=List[InterviewResponse])
 def get_all_interview_sessions(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    role: str = "interviewer"
 ):
     """
-    Get all interview sessions
+    Get all interview sessions for the current user
     """
-    sessions = db.query(InterviewSession).all()
+    if current_user.is_admin:
+        # Admins can see all interviews
+        sessions = db.query(InterviewSession).all()
+    elif role == "interviewer":
+        # Get interviews where user is the interviewer
+        sessions = db.query(InterviewSession).filter(
+            InterviewSession.interviewer_id == current_user.id
+        ).all()
+    else:
+        # Get interviews where user is the candidate
+        sessions = db.query(InterviewSession).filter(
+            InterviewSession.candidate_id == current_user.id
+        ).all()
+    
     return sessions
+
+
+@router.put("/{session_id}", response_model=InterviewResponse)
+def update_interview_session(
+    session_id: int,
+    interview_data: InterviewUpdate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update an interview session
+    """
+    session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    # Check if user is authorized to update this interview
+    if session.interviewer_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the interviewer or admin can update this interview"
+        )
+    
+    # Update fields if provided
+    for field, value in interview_data.dict(exclude_unset=True).items():
+        setattr(session, field, value)
+    
+    db.commit()
+    db.refresh(session)
+    
+    # If feedback was provided, send email to candidate
+    if interview_data.feedback and session.candidate_id:
+        candidate = db.query(User).filter(User.id == session.candidate_id).first()
+        if candidate and candidate.email:
+            review_link = f"https://ai-interview-copilot.vercel.app/review/{session_id}"
+            
+            send_interview_feedback(
+                background_tasks=background_tasks,
+                to_email=candidate.email,
+                candidate_name=candidate.full_name,
+                interviewer_name=current_user.full_name,
+                interview_topic=session.interview_topic,
+                feedback_summary=interview_data.feedback[:200] + "..." if len(interview_data.feedback) > 200 else interview_data.feedback,
+                review_link=review_link
+            )
+    
+    return session
 
 
 @router.post("/{session_id}/upload-recording")
@@ -120,7 +259,8 @@ async def upload_recording(
     session_id: int,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Upload a recording file for a specific interview session
@@ -131,6 +271,15 @@ async def upload_recording(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    # Check if user is authorized to upload recording
+    if (session.interviewer_id != current_user.id and 
+        session.candidate_id != current_user.id and 
+        not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to upload recording for this interview"
         )
     
     # Create a unique filename
@@ -256,7 +405,8 @@ async def process_transcription(file_path, session_id):
 @router.get("/{session_id}/recording")
 async def get_recording(
     session_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Serve the recording file for a specific interview session
@@ -266,6 +416,15 @@ async def get_recording(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    # Check if user is authorized to access this recording
+    if (session.interviewer_id != current_user.id and 
+        session.candidate_id != current_user.id and 
+        not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this recording"
         )
 
     if not session.recording_path:
@@ -287,7 +446,8 @@ async def get_recording(
 @router.get("/{session_id}/transcript")
 async def get_transcript(
     session_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get the transcript for a specific interview session
@@ -297,6 +457,15 @@ async def get_transcript(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    # Check if user is authorized to access this transcript
+    if (session.interviewer_id != current_user.id and 
+        session.candidate_id != current_user.id and 
+        not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this transcript"
         )
     
     return {
@@ -312,7 +481,8 @@ async def get_transcript(
 async def analyze_interview_endpoint(
     session_id: int,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Generate AI analysis for an interview
@@ -323,6 +493,14 @@ async def analyze_interview_endpoint(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    # Check if user is authorized to analyze this interview
+    if (session.interviewer_id != current_user.id and 
+        not current_user.is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the interviewer or admin can analyze this interview"
         )
     
     if not session.transcript:
@@ -382,3 +560,42 @@ async def analyze_interview_background(session_id, transcript, context):
         print(f"Error in analysis background task: {str(e)}")
     finally:
         db_session.close()
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_interview(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete an interview session
+    """
+    session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Interview session with ID {session_id} not found"
+        )
+    
+    # Check if user is authorized to delete this interview
+    if session.interviewer_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the interviewer or admin can delete this interview"
+        )
+    
+    # Delete the recording file if it exists
+    if session.recording_path:
+        file_path = Path(__file__).resolve().parent.parent.parent.parent / session.recording_path
+        if file_path.exists():
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"Error deleting recording file: {str(e)}")
+    
+    # Delete the interview from the database
+    db.delete(session)
+    db.commit()
+    
+    return None

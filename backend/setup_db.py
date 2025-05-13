@@ -1,11 +1,12 @@
-# backend/create_db.py
-from app.database import Base, engine
+# setup_db.py
+from app.database import engine, Base
+from app.models.user import User
 from app.models.interview import InterviewSession
 
-def init_db():
+def setup_database():
     print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
     print("Database tables created successfully!")
 
 if __name__ == "__main__":
-    init_db()
+    setup_database()
