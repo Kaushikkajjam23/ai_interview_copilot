@@ -1,12 +1,13 @@
-# backend/app/routers/auth.py
+# app/routers/auth.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models.user import User
-from ..auth.utils import verify_password, get_password_hash, create_access_token
+from ..auth.utils import verify_password, get_password_hash, create_access_token, get_current_user
 from pydantic import BaseModel, EmailStr
 from datetime import timedelta
+from typing import Optional
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -67,7 +68,7 @@ def login_for_access_token(
         )
     
     # Create access token
-    access_token_expires = timedelta(minutes=60 * 24)  # 24 hours
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email},
         expires_delta=access_token_expires

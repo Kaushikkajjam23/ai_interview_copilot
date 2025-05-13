@@ -1,4 +1,4 @@
-# backend/app/services/email_service.py
+# app/services/email_service.py
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -22,6 +22,11 @@ def send_email_background(
 ):
     """Send email in the background"""
     try:
+        # Skip sending if credentials are not configured
+        if not EMAIL_USERNAME or not EMAIL_PASSWORD:
+            logger.warning("Email credentials not configured. Skipping email send.")
+            return False
+            
         # Create message
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
@@ -35,8 +40,7 @@ def send_email_background(
         # Send email
         with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
             server.starttls()
-            if EMAIL_USERNAME and EMAIL_PASSWORD:
-                server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
+            server.login(EMAIL_USERNAME, EMAIL_PASSWORD)
             server.sendmail(EMAIL_FROM, to_email, message.as_string())
             
         logger.info(f"Email sent to {to_email}")

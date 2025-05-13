@@ -1,59 +1,40 @@
-# FastAPI and web server
+#FastAPI and web server
 fastapi>=0.104.0
 uvicorn>=0.24.0
 python-multipart>=0.0.6
 pydantic>=2.4.2
 email-validator>=2.1.0
 
-# Database
+#Database
 sqlalchemy>=2.0.23
 alembic>=1.12.1
 sqlalchemy-utils>=0.41.1
 
-# API clients
+#API clients
 httpx>=0.25.1
 requests>=2.31.0
 
-# Audio processing
+#Audio processing
 python-dotenv>=1.0.0
 assemblyai>=0.17.0
 openai>=1.2.3
 
-# Utilities
+#Utilities
 python-jose>=3.3.0
 passlib>=1.7.4
 bcrypt>=4.0.1
 websockets>=12.0
 
-# CORS
+#CORS
 starlette>=0.31.1
 
-# FastAPI and web server
-fastapi>=0.104.0
-uvicorn>=0.24.0
-python-multipart>=0.0.6
-pydantic>=2.4.2
-email-validator>=2.1.0
-
-# Database
-sqlalchemy>=2.0.23
-alembic>=1.12.1
-sqlalchemy-utils>=0.41.1
-
-# API clients
-httpx>=0.25.1
-requests>=2.31.0
-
-# Audio processing
-python-dotenv>=1.0.0
-assemblyai>=0.17.0
-openai>=1.2.3
-
-# Utilities
-python-jose>=3.3.0
-passlib>=1.7.4
-bcrypt>=4.0.1
-websockets>=12.0
-
-# CORS
-starlette>=0.31.1
+#Specific versions
+fastapi==0.103.1
+uvicorn==0.23.2
+sqlalchemy==2.0.20
+pydantic==2.3.0
+python-jose==3.3.0
+passlib==1.7.4
+python-multipart==0.0.6
+email-validator==2.0.0.post2
+bcrypt==4.0.1

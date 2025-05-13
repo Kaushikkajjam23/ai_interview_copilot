@@ -1,4 +1,4 @@
-# backend/app/models/interview.py
+# app/models/interview.py
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -10,8 +10,8 @@ class InterviewSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Foreign keys to users
-    interviewer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    interviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Allow null for backward compatibility
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=True)    # Allow null for backward compatibility
     
     # Keep these for backwards compatibility
     interviewer_name = Column(String, nullable=True)

@@ -1,0 +1,22 @@
+# render.yaml
+services:
+  - type: web
+    name: ai-interview-copilot-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USERNAME
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        value: ai.interview.copilot@example.com
