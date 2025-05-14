@@ -1,7 +1,6 @@
 // frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-
 // Import actual components from your repository
 import Login from './components/Login';
 import Register from './components/Register';
@@ -33,7 +32,7 @@ function App() {
                   <Dashboard />
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/schedule-interview" element={
                 <ProtectedRoute>
                   <ScheduleInterview />
@@ -62,6 +61,7 @@ function App() {
               {/* 404 route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            
           </main>
           
           <footer className="bg-gray-100 py-4 text-center text-gray-600 text-sm">

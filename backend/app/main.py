@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Import database models
 from .database import engine, Base
 from .models import interview, user  # Import all model modules
-from .routers import interviews, signaling, auth  # Import all routers
+from .routers import interviews, signaling, auth,notification  # Import all routers
 
 # Create tables directly (fallback method)
 Base.metadata.create_all(bind=engine)
@@ -88,6 +88,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(interviews.router)
+app.include_router(notification.router)
 app.include_router(signaling.router)  # If you have this router
 
 @app.get("/")

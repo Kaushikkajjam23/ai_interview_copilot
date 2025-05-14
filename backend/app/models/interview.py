@@ -10,19 +10,23 @@ class InterviewSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     
     # Foreign keys to users
-    interviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Allow null for backward compatibility
-    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=True)    # Allow null for backward compatibility
+    interviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    candidate_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
-    # Keep these for backwards compatibility
-    interviewer_name = Column(String, nullable=True)
-    candidate_name = Column(String, nullable=True)
+    # User information (for backward compatibility and when users are external)
+    interviewer_name = Column(String, nullable=False)
+    candidate_name = Column(String, nullable=False)
+    interviewer_email = Column(String, nullable=True)
+    candidate_email = Column(String, nullable=True)
     
+    # Interview details
     interview_topic = Column(String, nullable=False)
     candidate_level = Column(String, nullable=False)
-    required_skills = Column(String, nullable=False)
-    focus_areas = Column(String, nullable=False)
+    required_skills = Column(Text, nullable=False)
+    focus_areas = Column(Text, nullable=False)
     
-    # New fields for scheduling
+    # Scheduling fields
     scheduled_time = Column(DateTime, nullable=True)
     is_completed = Column(Boolean, default=False)
     is_canceled = Column(Boolean, default=False)
@@ -48,3 +52,4 @@ class InterviewSession(Base):
     # Relationships
     interviewer = relationship("User", back_populates="interviews_as_interviewer", foreign_keys=[interviewer_id])
     candidate = relationship("User", back_populates="interviews_as_candidate", foreign_keys=[candidate_id])
+    creator = relationship("User", back_populates="created_interviews", foreign_keys=[created_by])
