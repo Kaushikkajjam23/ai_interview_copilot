@@ -1,4 +1,3 @@
-# app/services/email_service.py
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -66,44 +65,10 @@ def send_interview_invitation(
     <body>
         <h2>Interview Invitation</h2>
         <p>Hello {candidate_name},</p>
-        <p>You have been invited to an interview with {interviewer_name} for the position of {interview_topic}.</p>
+        <p>You have been invited to an interview with {interviewer_name} for {interview_topic}.</p>
         <p><strong>Scheduled Time:</strong> {scheduled_time}</p>
         <p>Please click the link below to join the interview:</p>
         <p><a href="{interview_link}">Join Interview</a></p>
-        <p>Best regards,<br>AI Interview Co-Pilot Team</p>
-    </body>
-    </html>
-    """
-    
-    background_tasks.add_task(
-        send_email_background,
-        to_email=to_email,
-        subject=subject,
-        html_content=html_content
-    )
-
-def send_interview_feedback(
-    background_tasks: BackgroundTasks,
-    to_email: str,
-    candidate_name: str,
-    interviewer_name: str,
-    interview_topic: str,
-    feedback_summary: str,
-    review_link: str
-):
-    """Send interview feedback email"""
-    subject = f"Interview Feedback: {interview_topic}"
-    
-    html_content = f"""
-    <html>
-    <body>
-        <h2>Interview Feedback</h2>
-        <p>Hello {candidate_name},</p>
-        <p>Thank you for participating in the interview for {interview_topic} with {interviewer_name}.</p>
-        <p><strong>Feedback Summary:</strong></p>
-        <p>{feedback_summary}</p>
-        <p>To view the detailed feedback and analysis, please click the link below:</p>
-        <p><a href="{review_link}">View Detailed Feedback</a></p>
         <p>Best regards,<br>AI Interview Co-Pilot Team</p>
     </body>
     </html>
