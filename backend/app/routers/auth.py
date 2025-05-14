@@ -11,6 +11,9 @@ from typing import Optional
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
+# Add this constant that was missing
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -23,7 +26,7 @@ class UserResponse(BaseModel):
     is_admin: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode=True for Pydantic v2
 
 class Token(BaseModel):
     access_token: str

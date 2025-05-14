@@ -1,12 +1,15 @@
 // frontend/src/context/AuthContext.jsx
 import { createContext, useState, useEffect, useContext } from 'react';
 import { API_URL } from '../config';
+import { useNavigate } from 'react-router-dom';
+
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is logged in on mount
@@ -63,6 +66,10 @@ export function AuthProvider({ children }) {
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
       setUser(data.user);
+      
+      // Navigate to dashboard after successful login
+      navigate('/dashboard');
+      
       return data.user;
     } catch (err) {
       console.error('Login error:', err);
@@ -95,8 +102,11 @@ export function AuthProvider({ children }) {
         throw new Error(errorData.detail || 'Registration failed');
       }
 
-      // Auto-login after registration
-      return await login(email, password);
+      // Show success message and navigate to login
+      alert('Registration successful! Please login with your credentials.');
+      navigate('/login');
+      
+      return await response.json();
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.message);
@@ -109,6 +119,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
+    navigate('/login');
   };
 
   return (
