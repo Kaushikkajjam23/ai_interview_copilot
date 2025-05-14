@@ -1,5 +1,5 @@
 // frontend/src/components/ScheduleInterview.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
@@ -9,6 +9,8 @@ import 'react-datetime-picker/dist/DateTimePicker.css';
 function ScheduleInterview() {
   const [formData, setFormData] = useState({
     candidate_email: '',
+    candidate_name: '',  // Added missing field
+    interviewer_name: '', // Added missing field
     interview_topic: '',
     candidate_level: 'Junior',
     required_skills: '',
@@ -20,6 +22,16 @@ function ScheduleInterview() {
   
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Auto-fill interviewer name if user is available
+  useEffect(() => {
+    if (user && user.name) {
+      setFormData(prev => ({
+        ...prev,
+        interviewer_name: user.name
+      }));
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +48,11 @@ function ScheduleInterview() {
     
     try {
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
+      
       const response = await fetch(`${API_URL}/api/interviews/`, {
         method: 'POST',
         headers: {
@@ -59,7 +76,7 @@ function ScheduleInterview() {
       });
     } catch (err) {
       console.error('Error scheduling interview:', err);
-      setError(err.message);
+      setError(typeof err.message === 'string' ? err.message : 'An error occurred while scheduling the interview');
     } finally {
       setIsSubmitting(false);
     }
@@ -77,6 +94,19 @@ function ScheduleInterview() {
       
       <form onSubmit={handleSubmit} className="interview-form">
         <div className="form-group">
+          <label htmlFor="candidate_name">Candidate Name</label>
+          <input
+            type="text"
+            id="candidate_name"
+            name="candidate_name"
+            value={formData.candidate_name}
+            onChange={handleChange}
+            required
+            placeholder="Enter candidate name"
+          />
+        </div>
+        
+        <div className="form-group">
           <label htmlFor="candidate_email">Candidate Email</label>
           <input
             type="email"
@@ -86,6 +116,19 @@ function ScheduleInterview() {
             onChange={handleChange}
             required
             placeholder="Enter candidate email"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="interviewer_name">Interviewer Name</label>
+          <input
+            type="text"
+            id="interviewer_name"
+            name="interviewer_name"
+            value={formData.interviewer_name}
+            onChange={handleChange}
+            required
+            placeholder="Enter interviewer name"
           />
         </div>
         
